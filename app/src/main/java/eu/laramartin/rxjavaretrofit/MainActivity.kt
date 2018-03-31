@@ -5,6 +5,7 @@ import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import com.jakewharton.rxbinding2.widget.RxTextView
 import io.reactivex.Single
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
@@ -13,6 +14,7 @@ import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
+import java.util.concurrent.TimeUnit
 
 
 class MainActivity : AppCompatActivity() {
@@ -24,16 +26,24 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val textChangesObservable = RxTextView.textChanges(edit)
-        disposable = textChangesObservable.subscribe({
-            Log.v(TAG, "textview: $it")
-        })
-
         val service = service()
-        service.search("android")
-                .subscribeOn(Schedulers.io())
-                .subscribe({ result : BookSearchResult ->
-            Log.v(TAG, "google book service $result")
+        val textChangesObservable = RxTextView.textChanges(edit)
+        disposable = textChangesObservable
+                .filter { it.isNotEmpty() }
+                .debounce(1, TimeUnit.SECONDS)
+                .flatMap {
+                    Log.v(TAG, "searching for books... $it")
+                    service.search(it.toString())
+                            .subscribeOn(Schedulers.io())
+                            .toObservable()
+                }
+                .map {
+                    it.items.first().volumeInfo.title
+                }
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe({
+            Log.v(TAG, "textview: $it")
+            text.text = it
         }, {t: Throwable -> Log.e(TAG, "google book service error $t", t)})
     }
 
