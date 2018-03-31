@@ -6,6 +6,9 @@ import android.util.Log
 import com.jakewharton.rxbinding2.widget.RxTextView
 import io.reactivex.disposables.Disposable
 import kotlinx.android.synthetic.main.activity_main.*
+import retrofit2.Retrofit
+import retrofit2.converter.moshi.MoshiConverterFactory
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -20,6 +23,16 @@ class MainActivity : AppCompatActivity() {
         disposable = textChangesObservable.subscribe({
             Log.v(TAG, "textview: $it")
         })
+
+        configureRetrofit()
+    }
+
+    private fun configureRetrofit() {
+        val retrofit = Retrofit.Builder()
+                .baseUrl("https://www.googleapis.com")
+                .addConverterFactory(MoshiConverterFactory.create())
+                .build()
+//        service = retrofit.create<GoogleBooksService>(GoogleBooksService::class.java!!)
     }
 
     override fun onDestroy() {
