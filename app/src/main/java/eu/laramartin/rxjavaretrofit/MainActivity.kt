@@ -4,16 +4,20 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import com.jakewharton.rxbinding2.widget.RxTextView
+import io.reactivex.Single
 import io.reactivex.disposables.Disposable
 import kotlinx.android.synthetic.main.activity_main.*
 import retrofit2.Retrofit
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.moshi.MoshiConverterFactory
+import retrofit2.http.GET
+import retrofit2.http.Query
 
 
 class MainActivity : AppCompatActivity() {
 
     private val TAG = "MainActivity"
-    private var disposable : Disposable? = null
+    private var disposable: Disposable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,15 +28,19 @@ class MainActivity : AppCompatActivity() {
             Log.v(TAG, "textview: $it")
         })
 
-        configureRetrofit()
+        val service = service()
+        service.search("android").subscribe({ result : BookSearchResult ->
+            Log.v(TAG, "google book service $result")
+        }, {t: Throwable -> Log.e(TAG, "google book service error $t", t)})
     }
 
-    private fun configureRetrofit() {
+    private fun service(): GoogleBooksService {
         val retrofit = Retrofit.Builder()
                 .baseUrl("https://www.googleapis.com")
                 .addConverterFactory(MoshiConverterFactory.create())
+                .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .build()
-//        service = retrofit.create<GoogleBooksService>(GoogleBooksService::class.java!!)
+        return retrofit.create<GoogleBooksService>(GoogleBooksService::class.java)
     }
 
     override fun onDestroy() {
@@ -40,3 +48,15 @@ class MainActivity : AppCompatActivity() {
         disposable?.dispose()
     }
 }
+
+interface GoogleBooksService {
+    @GET("books/v1/volumes")
+    fun search(@Query("q") search: String): Single<BookSearchResult>
+}
+
+data class BookSearchResult(val items: List<Book>)
+
+data class Book(val volumeInfo : BookVolumeInfo)
+
+data class BookVolumeInfo(val title: String)
+
