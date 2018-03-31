@@ -1,4 +1,4 @@
-package eu.laramartin.rxjava_retrofit
+package eu.laramartin.rxjavaretrofit
 
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
