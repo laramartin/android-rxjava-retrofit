@@ -6,6 +6,7 @@ import android.util.Log
 import com.jakewharton.rxbinding2.widget.RxTextView
 import io.reactivex.Single
 import io.reactivex.disposables.Disposable
+import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
@@ -29,7 +30,9 @@ class MainActivity : AppCompatActivity() {
         })
 
         val service = service()
-        service.search("android").subscribe({ result : BookSearchResult ->
+        service.search("android")
+                .subscribeOn(Schedulers.io())
+                .subscribe({ result : BookSearchResult ->
             Log.v(TAG, "google book service $result")
         }, {t: Throwable -> Log.e(TAG, "google book service error $t", t)})
     }
